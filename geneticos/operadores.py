@@ -2,6 +2,9 @@
 import numpy as np
 import pandas as pd
 
+# Propios.
+from .metodos_seleccion import generar_ruleta
+
 
 def inicializar_poblacion(
     N: int,
@@ -46,46 +49,48 @@ def seleccion(
         PARAMS:
             - aptitudes: lista de aptitudes de la población.
     '''
-
     # Operador genetico de selccion de parejas.
     parejas = []
-    
-    # Ahora calculamos la probabilidad de la ruleta por individuo.
-    aptitud_pobalcion = sum(aptitudes)
 
-    # Si la aptitud de la pobalcion es distinta de 0
-    # entonces se calculan las probabilidades de cruce.
-    probabilidades = aptitudes / aptitud_pobalcion
+    # Realizamos un split del 50/50, una parte de la población
+    # la más apta sera parte de la ruleta, la otra sera parte de los
+    # individuos que giraran la ruleta
+    contendientes = aptitudes[:int(len(aptitudes)*.5)]
+    individuos = aptitudes[int(len(aptitudes)*.5):]
 
-    # Si la aptitud de la poblacion es 0, etonces las probabilidades
-    # sin equitativas.
-    if aptitud_pobalcion == 0:
-        probabilidades = None
+    # Generamos una ruleta para la selección de las parejas.
+    ruleta = generar_ruleta(contendientes)
 
-    else:
-        # Eliminamos el problema de que exista un unico 
-        if probabilidades[0] == 1:
-            probabilidades *= 0
-            probabilidades += 0.1
-            probabilidades /= len(aptitudes) - 1
-            probabilidades[0] = 0.9
+    # Total de contendientes en la ruleta.
+    total_contendientes = len(ruleta.index)
 
-    # Calculamos cuantas parejas se generaran.
-    total_parejas = int(len(aptitudes.index)) / 2
+    # Por cada individuo en la población
+    for individuo in individuos.index:
+        # Generamos un numero en el intervalo de [0, 1)
+        giro = np.random.random()
 
-    # Lista de id de los individuos.
-    id_individuos = aptitudes.index
-    
-    # Por último generamos las parejas con la ruleta.
-    while total_parejas > 0:
-        parejas.append(np.random.choice(
-            id_individuos,
-            2,
-            replace=False,
-            p=probabilidades
-        ))
+        # intervalo inferior es en 0
+        int_inf = 0
 
-        total_parejas -= 1
+        # Verificamos que pareja le corresponde.
+        for i in range(total_contendientes):
+            # Contendiente actual.
+            contendiente = ruleta.index[i]
+
+            # El intervalo superior pasa a ser el area de la ruleta
+            # del contendiente actual.
+            int_sup = ruleta[contendiente]
+
+            # Si el giro se encuentra en el intervalo [inf, sup)
+            if giro >= int_inf and giro < int_sup:
+                break
+
+            # Si no se encuentra en el intervalo, avanzamos
+            # al siguiente intervalo.
+            int_inf += int_sup
+
+        # Agregamos la pareja.
+        parejas.append((individuo, contendiente))
 
     return parejas
 
@@ -126,8 +131,8 @@ def cruce(
         long_genoma = len(individuo_b)
 
         # Instancias de los nuevos individuos.
-        nuevo_individuo_a = np.array([])
-        nuevo_individuo_b = np.array([])
+        nuevo_individuo_a = np.array([], dtype=np.integer)
+        nuevo_individuo_b = np.array([], dtype=np.integer)
 
         # Iteramos entre cada seccion del genoma.
         while i_sup < long_genoma:
@@ -216,4 +221,3 @@ def mutacion(
                     individuo[i] = int(not individuo[i])
 
     return nueva_poblacion
-

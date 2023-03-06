@@ -30,22 +30,20 @@ def fun_aptitud(
     # El algoritmo genetico pasa el genoma y el genoma decodificado
     # a la funcion de aptitud, de esta forma se puede calcular una
     # funcion de aptitud personalizada.
-    x_1 = genoma_decodificado[0]
-    x_2 = genoma_decodificado[1]
+    x1 = genoma_decodificado[0]
+    x2 = genoma_decodificado[1]
 
-    restriccion_1 = (6 * x_1 + 4 * x_2) <= 24
-    restriccion_2 = (x_1 + 2 * x_2) <= 6
-    restriccion_3 = (-x_1 + x_2) <= 1
-    restriccion_4 = x_2 <= 2
-    restriccion_no_negatividad = (x_1 >= 0) and (x_2 >= 0)
+    r1 = x1 <= 100
+    r2 = (2*x1) + (4*x2) <= 140
+    r3 = (-0.2*x1) + (0.8*x2) <= 0
+    restriccion_no_negatividad = (x1 >= 0) and (x2 >= 0)
 
-    aptitud = 5 * x_1 + 4 * x_2
+    aptitud = 20*x1 + 50*x2
 
     if not (
-        restriccion_1
-        and restriccion_2
-        and restriccion_3
-        and restriccion_4
+        r1
+        and r2
+        and r3
         and restriccion_no_negatividad
     ):
         aptitud = 0
@@ -62,16 +60,17 @@ def fun_aptitud(
 
 # Funcion main.
 def main(*args, **kargs) -> None:
-    secciones_genoma: 'list[int]' = [32, 32]
-    secciones_continuas: 'list[int]' = [(0, 5), (0, 5)]
+    secciones_genoma: 'list[int]' = [7, 5]
+    # secciones_continuas: 'list[int]' = [(0, 100), (0, 20)]
+    secciones_continuas = None
 
     # Instanciamos el algoritmo genetico.
     algo_gen = ag.AG(
         100,
         secciones_genoma,
-        100,
-        0.5,  # lambda i : 1 / np.exp(i - 50 / 100) if i > 50 else 0.8,
-        0.2,
+        1000,
+        0.01,  # lambda i : 1 / np.exp(i - 50 / 100) if i > 50 else 0.8,
+        0.8,
         fun_aptitud,
         continuo=secciones_continuas
     )
@@ -86,8 +85,9 @@ def main(*args, **kargs) -> None:
 
     a = time.perf_counter()
     i = 0
-    for aptitud_prom, optimo, config in algo_gen:
+    for aptitud_prom, optimo, long_poblacion, config in algo_gen:
         historico[i] = {
+            'poblacion': long_poblacion,
             'aptitud_prom': aptitud_prom,
             'optimo': optimo,
             'X': config,
@@ -115,7 +115,7 @@ def main(*args, **kargs) -> None:
         [i for i in range(len(historico.loc['aptitud_prom']))],
         historico.loc['aptitud_prom'],
         'o-',
-        label='Aptitud Global'
+        label='Aptitud Promedio'
     )
     plt.grid()
     plt.legend()

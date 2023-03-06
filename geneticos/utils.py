@@ -113,14 +113,60 @@ def aptitud_poblacion(
     # Calculamos las aptitudes de la población.
     aptitudes = {}
     for id in poblacion.index:
+        # Se recupera el genoma del individuo.
         individuo = poblacion.loc[id]
+
+        # Calculamos la aptitud del individuo.
         aptitudes[id] = fun_apt(
             individuo,
             decodificar_genoma(individuo, SG, continuo)
         )
 
+    # Se genera un dataframe con las aptitudes de la población.
     aptitudes = pd.Series(aptitudes)
-    
+
+    # Ordenamos las aptitudes de manera descendente.
     aptitudes.sort_values(ascending=False, inplace=True)
 
     return aptitudes
+
+
+def combinar_poblaciones(
+    maximo_poblacion: int,
+    poblaciones: 'list[pd.DataFrame]',
+    SG: 'list | tuple',
+    fun_apt: 'function',
+    continuo: 'list | tuple | None' = None
+) -> pd.DataFrame:
+    '''
+        Combina las poblaciones, la antigua y la nueva y filtra la
+        población con menor aptitud.
+
+        PARAMS:
+            - maximo_poblacion: Maximo de poblacion posible.
+            - poblaciones: lista de poblaciones a concatenar.
+            - pobalcion: poblacion a la que se calculara la aptitud.
+            - SG: secciones del genoma.
+            - fun_apt: función de aptitud de la población.
+            - continuo: Rangos de los valores
+                        continuos contenidos en el genoma.
+    '''
+
+    # Concatenamos las poblaciones.
+    poblacion_combinada = pd.concat(poblaciones)
+
+    # Calculamos las aptitudes de la poblacion combinada.
+    aptitudes = aptitud_poblacion(
+        poblacion_combinada,
+        SG,
+        fun_apt, 
+        continuo
+    )
+
+    # Consultamos los individuos con menor aptitud.
+    poblacion_eliminada = aptitudes.index[maximo_poblacion:]
+
+    # Eliminamos la poblacion con menor aptitud.
+    poblacion_combinada.drop(poblacion_eliminada, inplace=True)
+
+    return poblacion_combinada
